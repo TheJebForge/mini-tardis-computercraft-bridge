@@ -1,0 +1,35 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IRI",
+    "CM#",
+    "IRI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "C": {
+      "item": "minecraft:compass"
+    },
+    "#": {
+      "item": "minecraft:clock"
+    },
+    "M": [
+      {
+        "item": "computercraft:wired_modem"
+      },
+      {
+        "item": "computercraft:wired_modem_full"
+      }
+    ]
+  },
+  "result": {
+    "item": "mini_tardis_computercraft_bridge:peripheral",
+    "count": 1
+  }
+}
