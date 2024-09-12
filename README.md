@@ -3,6 +3,7 @@
 
 # About
 Adds `TARDIS Computer Interface` block that acts as a peripheral for ComputerCraft, it can be crafted as following:
+
 ![image](https://github.com/user-attachments/assets/ce23905a-d4a7-4de9-beee-18c2124b94bb)
 
 (Any wired modem will do)

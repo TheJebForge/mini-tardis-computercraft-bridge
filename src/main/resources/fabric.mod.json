@@ -3,13 +3,13 @@
 	"id": "mini_tardis_computercraft_bridge",
 	"version": "${version}",
 	"name": "Mini Tardis ComputerCraft Bridge",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Bridges Mini Tardis and CC:Tweaked",
 	"authors": [
-		"Me!"
+		"TheJebForge"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://modrinth.com/mod/mini-tardis-computercraft-bridge",
+		"sources": "https://github.com/TheJebForge/mini-tardis-computercraft-bridge"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/mini_tardis_computercraft_bridge/icon.png",
@@ -29,8 +29,5 @@
 		"fabric-api": "*",
 		"mini_tardis": ">=1.0.4",
 		"computercraft": ">=1.113.1"
-	},
-	"suggests": {
-		"another-mod": "*"
 	}
 }
