@@ -152,7 +152,7 @@ public class Peripheral implements IPeripheral, TardisAware {
                         partialLocation -> partialLocation.worldKey()
                 );
 
-        return world.toString();
+        return Utils.worldRegistryToString(world);
     }
 
     // Destination
@@ -177,7 +177,7 @@ public class Peripheral implements IPeripheral, TardisAware {
         TardisLocation tardisLocation = getTardisWithException().getDestination()
                 .orElseThrow(() -> new LuaException("Destination of TARDIS is unknown"));
 
-        return tardisLocation.worldKey().toString();
+        return Utils.worldRegistryToString(tardisLocation.worldKey());
     }
 
     private List<RegistryKey<World>> availableWorldRegistryKeys(Tardis tardis) {
