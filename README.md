@@ -15,6 +15,8 @@ Adds `TARDIS Computer Interface` block that acts as a peripheral for ComputerCra
 
 # Method Reference
 - `isLinked()` returns boolean, tells if Computer Interface is within TARDIS
+
+All following methods will error if Computer Interface is not inside of a TARDIS
 - `getState()` checks TARDIS state and returns one of following strings:
   - `booting_up`, TARDIS is currently booting up
   - `crashed`, TARDIS has crashed and needs to be rebooted
@@ -34,26 +36,26 @@ Adds `TARDIS Computer Interface` block that acts as a peripheral for ComputerCra
 - `getFuel()` returns number 0 to 1000, tells how much fuel TARDIS has
 - `getStability()` returns number 0 to 1000, tells how much stability TARDIS has
 - `getAvailableWorlds()` returns an array of strings, tells which dimensions TARDIS is able to travel to
-- `getCurrentPos()` returns array of 3 numbers as XYZ, current position of TARDIS 
-- `getCurrentFacing()` returns one of following strings, which way TARDIS is currently facing:
+- `getCurrentPos()` returns array of 3 numbers as XYZ, errors if TARDIS is not landed, current position of TARDIS
+- `getCurrentFacing()` returns one of following strings, errors if TARDIS is not landed, which way TARDIS is currently facing:
   - `north`
   - `east`
   - `west`
   - `south`
 - `getCurrentWorld()` returns string, world TARDIS is currently in
-- `getDestinationPos()` returns array of 3 numbers as XYZ, current destination of TARDIS
-- `getDestinationFacing()` returns compass direction string, which way TARDIS should face at the destination
-- `getDestinationWorld()` returns string, world TARDIS will try to fly to
+- `getDestinationPos()` returns array of 3 numbers as XYZ, errors if destination is unknown, current destination of TARDIS
+- `getDestinationFacing()` returns compass direction string, errors if destination is unknown, which way TARDIS should face at the destination
+- `getDestinationWorld()` returns string, errors if destination is unknown, world TARDIS will try to fly to
 - `resetDestination()` returns true if successful, resets destination back to current TARDIS location
-- `setDestinationPos(x, y, z)` returns true if successful, sets destination to provided coordinates
+- `setDestinationPos(x, y, z)` returns true if successful, errors if destination is unreachable, sets destination to provided coordinates
 - `setDestinationFacing(compass_direction)` returns true if successful, sets which way TARDIS will face at the destination
-- `setDestinationWorld(world_id)` returns true if successful, sets destination world
+- `setDestinationWorld(world_id)` returns true if successful, errors if TARDIS can't go in that world or it's not yet discovered with Dimensions app, sets destination world
 - `isDestinationLocked()` returns boolean, tells if destination is locked
 - `setDestinationLocked(boolean)` returns true if successful, sets lock state of destination lock
 - `areConduitsUnlocked()` returns boolean, tells if energy conduits are unlocked
 - `setConduitsUnlocked(boolean)` returns true if successful, locks or unlocks energy conduits
 - `handbrake(boolean)` returns true if successful, sets handbrake state
-- `getErrorOffsets()` returns array of offsets, can only be called during `flying` state, each offset is an array of 2 elements. 
+- `getErrorOffsets()` returns array of offsets, can only be called during `flying` state, errors otherwise, each offset is an array of 2 elements. 
   - First element of an offset is north/south offset, 1 means TARDIS needs to be nudged south, -1 means TARDIS needs to be nudged north
   - Second element of an offset is west/east offset, 1 means TARDIS needs to be nudged east, -1 means TARDIS needs to be nudged west
   - Return example: `{ {0,0}, {1,-1}, {1,0}, {0,-1} }`
@@ -66,6 +68,6 @@ Adds `TARDIS Computer Interface` block that acts as a peripheral for ComputerCra
   - `south`
   - `up`
   - `down`
-- `getTotalDriftingPhases()` returns number, tells how many drifting phases are there
-- `getDriftingPhasesComplete()` returns number, tells how many drifting phases have been completed
-- `isDriftingPhaseReady()` returns boolean, is true when TARDIS is ready for phase shift, call `handbrake(true)` to phase shift
+- `getTotalDriftingPhases()` returns number, can only be called during `drifting` state, errors otherwise, tells how many drifting phases are there
+- `getDriftingPhasesComplete()` returns number, can only be called during `drifting` state, errors otherwise, tells how many drifting phases have been completed
+- `isDriftingPhaseReady()` returns boolean, can only be called during `drifting` state, errors otherwise, is true when TARDIS is ready for phase shift, call `handbrake(true)` to phase shift
