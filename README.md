@@ -13,6 +13,14 @@ Adds `TARDIS Computer Interface` block that acts as a peripheral for ComputerCra
 - Wrap the peripheral using `peripheral.wrap(<side>)` or `peripheral.find("minitardis_bridge")`
 - Refer to Method Reference as you script your TARDIS
 
+## You can also use scripts I wrote that automate TARDIS
+- `scripts/tardisServer.lua` - put this script on a computer inside of the TARDIS, rename it to `startup.lua`, 
+change modem channels found on top of the file if there's multiple people playing.
+Computer must have TARDIS Computer Interface next to it and optionally ender modem if you want to use remote
+- `scripts/tardisRemote.lua` - put this script on a pocket computer with ender modem
+- `scripts/gpsHost.lua` - build a GPS constellation with wired modems and ender modems, 
+put info about your modems on top of the file and set which dimension the constellation is in. Rename script to `startup.lua`
+
 # Method Reference
 - `isLinked()` returns boolean, tells if Computer Interface is within TARDIS
 
