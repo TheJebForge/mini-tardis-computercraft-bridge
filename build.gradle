@@ -125,7 +125,7 @@ modrinth {
 	projectId = 'DKrmTLnT' // The ID of your Modrinth project. Slugs will not work.
 	versionNumber = "${project.version}" // The (preferably SemVer) version of the mod. If not specified, it'll use the `version` declaration
 	uploadFile = remapJar // Tells Minotaur to use the remapped jar
-	gameVersions = ['1.20.1'] // An array of game versions the version supports
+	gameVersions = ["${project.minecraft_version}"] as Iterable<? extends String> // An array of game versions the version supports
 	loaders = ['fabric'] // Self-explanatory.
 	dependencies = [
 			new ModDependency('AnM1UyFW', 'required'), // Creates a new required dependency on Fabric API
