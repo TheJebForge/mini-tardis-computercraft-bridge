@@ -93,6 +93,9 @@ function locateAndSet(resp)
         return
     end
 
+    x = math.floor(x)
+    z = math.floor(z)
+
     modem.transmit(tardisChannel, modemChannel, "destw " .. dimension)
     modem.transmit(tardisChannel, modemChannel, "destp " .. x .. " " .. y .. " " .. z)
 end
