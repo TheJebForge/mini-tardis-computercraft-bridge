@@ -24,10 +24,10 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.16.5",
-		"minecraft": "~1.20.1",
+		"minecraft": "~1.21.1",
 		"java": ">=17",
 		"fabric-api": "*",
-		"mini_tardis": ">=1.0.4",
+		"mini_tardis": ">=1.1.1",
 		"computercraft": ">=1.113.1"
 	}
 }

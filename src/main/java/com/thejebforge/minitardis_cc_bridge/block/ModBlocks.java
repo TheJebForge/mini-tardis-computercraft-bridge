@@ -2,7 +2,7 @@ package com.thejebforge.minitardis_cc_bridge.block;
 
 import com.google.common.collect.ImmutableList;
 import com.thejebforge.minitardis_cc_bridge.MiniTardisComputerCraftBridge;
-import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
+import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
@@ -12,7 +12,7 @@ import java.util.List;
 public class ModBlocks {
     public static final PeripheralBlock PERIPHERAL = register(
             "peripheral",
-            new PeripheralBlock(FabricBlockSettings.create()
+            new PeripheralBlock(AbstractBlock.Settings.create()
                     .requiresTool()
                     .strength(2.0f, 6.0f)));
 
