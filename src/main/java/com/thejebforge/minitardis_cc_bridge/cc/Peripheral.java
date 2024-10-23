@@ -148,8 +148,8 @@ public class Peripheral implements IPeripheral, TardisAware {
     public final String getCurrentWorld() throws LuaException {
         RegistryKey<World> world = getTardisWithException().getCurrentLocation()
                 .map(
-                        location -> location.worldKey(),
-                        partialLocation -> partialLocation.worldKey()
+                        TardisLocation::worldKey,
+                        PartialTardisLocation::worldKey
                 );
 
         return Utils.worldRegistryToString(world);

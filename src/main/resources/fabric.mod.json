@@ -19,15 +19,12 @@
 			"com.thejebforge.minitardis_cc_bridge.MiniTardisComputerCraftBridge"
 		]
 	},
-	"mixins": [
-		"mini_tardis_computercraft_bridge.mixins.json"
-	],
 	"depends": {
 		"fabricloader": ">=0.16.5",
 		"minecraft": "~1.21.1",
 		"java": ">=17",
 		"fabric-api": "*",
-		"mini_tardis": ">=1.1.1",
+		"mini_tardis": ">=2.0.0-beta.1",
 		"computercraft": ">=1.113.1"
 	}
 }

@@ -123,6 +123,7 @@ import com.modrinth.minotaur.dependencies.ModDependency
 modrinth {
 	token = "${System.getenv('MODRINTH_TOKEN')}" // Please use an environment variable for this! The default is `$MODRINTH_TOKEN`.
 	projectId = 'DKrmTLnT' // The ID of your Modrinth project. Slugs will not work.
+	versionName = "${project.version} for ${project.minecraft_version} and MT ${project.minitardis_version}"
 	versionNumber = "${project.version}" // The (preferably SemVer) version of the mod. If not specified, it'll use the `version` declaration
 	uploadFile = remapJar // Tells Minotaur to use the remapped jar
 	gameVersions = ["${project.minecraft_version}"] as Iterable<? extends String> // An array of game versions the version supports
