@@ -4,7 +4,9 @@ import com.thejebforge.minitardis_cc_bridge.util.Utils;
 import dan200.computercraft.api.lua.IArguments;
 import dan200.computercraft.api.lua.LuaException;
 import dan200.computercraft.api.lua.LuaFunction;
+import dan200.computercraft.api.peripheral.IComputerAccess;
 import dan200.computercraft.api.peripheral.IPeripheral;
+import dan200.computercraft.api.peripheral.WorkMonitor;
 import dev.enjarai.minitardis.block.TardisAware;
 import dev.enjarai.minitardis.component.PartialTardisLocation;
 import dev.enjarai.minitardis.component.Tardis;
@@ -28,9 +30,15 @@ import java.util.Optional;
 
 public class Peripheral implements IPeripheral, TardisAware {
     private final World world;
+    private WorkMonitor mainThread;
 
     public Peripheral(World world) {
         this.world = world;
+    }
+
+    @Override
+    public void attach(IComputerAccess computer) {
+        mainThread = computer.getMainThreadMonitor();
     }
 
     @LuaFunction
@@ -60,12 +68,14 @@ public class Peripheral implements IPeripheral, TardisAware {
 
     @LuaFunction
     public final boolean boot() throws LuaException {
-        return getTardisWithException().suggestStateTransition(new BootingUpState());
+        var tardis = getTardisWithException();
+        return mainThread.runWork(() -> tardis.suggestStateTransition(new BootingUpState()));
     }
 
     @LuaFunction
     public final boolean shutdown() throws LuaException {
-        return getTardisWithException().suggestStateTransition(new DisabledState());
+        var tardis = getTardisWithException();
+        return mainThread.runWork(() -> tardis.suggestStateTransition(new DisabledState()));
     }
 
 
@@ -77,7 +87,9 @@ public class Peripheral implements IPeripheral, TardisAware {
 
     @LuaFunction
     public final boolean setDestinationLocked(IArguments arguments) throws LuaException {
-        return getTardisWithException().getControls().setDestinationLocked(arguments.getBoolean(0), false);
+        var tardis = getTardisWithException();
+        var bool = arguments.getBoolean(0);
+        return mainThread.runWork(() -> tardis.getControls().setDestinationLocked(bool, false));
     }
 
     @LuaFunction
@@ -87,12 +99,16 @@ public class Peripheral implements IPeripheral, TardisAware {
 
     @LuaFunction
     public final boolean setConduitsUnlocked(IArguments arguments) throws LuaException {
-        return getTardisWithException().getControls().setEnergyConduits(arguments.getBoolean(0));
+        var tardis = getTardisWithException();
+        var bool = arguments.getBoolean(0);
+        return mainThread.runWork(() -> tardis.getControls().setEnergyConduits(bool));
     }
 
     @LuaFunction
     public final boolean handbrake(IArguments arguments) throws LuaException {
-        return getTardisWithException().getControls().handbrake(arguments.getBoolean(0));
+        var tardis = getTardisWithException();
+        var bool = arguments.getBoolean(0);
+        return mainThread.runWork(() -> tardis.getControls().handbrake(bool));
     }
 
     @LuaFunction
@@ -102,28 +118,31 @@ public class Peripheral implements IPeripheral, TardisAware {
 
     @LuaFunction
     public final boolean setCoordinateScale(IArguments arguments) throws LuaException {
+        var tardis = getTardisWithException();
         int power = arguments.getInt(0);
 
         if (power < 0 || power > 3)
             throw new LuaException("Invalid coordinate scale, range of 0 to 3 is allowed");
 
-        return getTardisWithException().getControls()
-                .updateCoordinateScale((int) Math.pow(10, arguments.getInt(0)));
+        return mainThread.runWork(() -> tardis.getControls().updateCoordinateScale((int) Math.pow(10, power)));
     }
 
     @LuaFunction
     public final boolean refuel(IArguments arguments) throws LuaException {
-        return getTardisWithException().getControls().refuelToggle(arguments.getBoolean(0));
+        var tardis = getTardisWithException();
+        var bool = arguments.getBoolean(0);
+        return mainThread.runWork(() -> tardis.getControls().refuelToggle(bool));
     }
 
     @LuaFunction
     public final boolean nudgeDestination(IArguments arguments) throws LuaException {
+        var tardis = getTardisWithException();
         Direction direction = Direction.byName(arguments.getString(0));
 
         if (direction == null)
             throw new LuaException("Invalid direction");
 
-        return getTardisWithException().getControls().nudgeDestination(direction);
+        return mainThread.runWork(() -> tardis.getControls().nudgeDestination(direction));
     }
 
 
@@ -217,12 +236,13 @@ public class Peripheral implements IPeripheral, TardisAware {
 
     @LuaFunction
     public final boolean setDestinationFacing(IArguments arguments) throws LuaException {
+        var tardis = getTardisWithException();
         Direction direction = Direction.byName(arguments.getString(0));
 
         if(direction == null || direction == Direction.DOWN || direction == Direction.UP)
             throw new LuaException("Invalid destination facing");
 
-        return getTardisWithException().getControls().rotateDestination(direction);
+        return mainThread.runWork(() -> tardis.getControls().rotateDestination(direction));
     }
 
     @LuaFunction
@@ -255,12 +275,14 @@ public class Peripheral implements IPeripheral, TardisAware {
                 throw new LuaException("Can't find a landing spot at provided target location");
         }
 
-        return tardis.setDestination(targetLocation, false);
+        TardisLocation finalTargetLocation = targetLocation;
+        return mainThread.runWork(() -> tardis.setDestination(finalTargetLocation, false));
     }
 
     @LuaFunction
     public final boolean resetDestination() throws LuaException {
-        return getTardisWithException().getControls().resetDestination();
+        var tardis = getTardisWithException();
+        return mainThread.runWork(() -> tardis.getControls().resetDestination());
     }
 
     // Flight info
