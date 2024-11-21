@@ -27,18 +27,15 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.function.Supplier;
 
 public class Peripheral implements IPeripheral, TardisAware {
     private final World world;
-    private WorkMonitor mainThread;
 
     public Peripheral(World world) {
         this.world = world;
-    }
-
-    @Override
-    public void attach(IComputerAccess computer) {
-        mainThread = computer.getMainThreadMonitor();
     }
 
     @LuaFunction
@@ -50,153 +47,208 @@ public class Peripheral implements IPeripheral, TardisAware {
         return getTardis(world).orElseThrow(() -> new LuaException("Peripheral is not located inside of a TARDIS"));
     }
 
+    @FunctionalInterface
+    public interface LuaSupplier<T> {
+        T get() throws LuaException;
+    }
+
+    private <T> T mainThread(LuaSupplier<T> func) throws LuaException {
+        CompletableFuture<T> future = new CompletableFuture<>();
+
+        //noinspection DataFlowIssue
+        world.getServer().execute(() -> {
+            try {
+                future.complete(func.get());
+            } catch (LuaException e) {
+                future.completeExceptionally(e);
+            }
+        });
+
+        try {
+            return future.join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof LuaException lua) {
+                throw lua;
+            }
+
+            throw e;
+        }
+    }
+
     // Info and power
     @LuaFunction
     public final String getState() throws LuaException {
-        return getTardisWithException().getState().id().getPath();
+        return mainThread(() -> getTardisWithException().getState().id().getPath());
     }
 
     @LuaFunction
     public final int getFuel() throws LuaException {
-        return getTardisWithException().getFuel();
+        return mainThread(() -> getTardisWithException().getFuel());
     }
 
     @LuaFunction
     public final int getStability() throws LuaException {
-        return getTardisWithException().getStability();
+        return mainThread(() -> getTardisWithException().getStability());
     }
 
     @LuaFunction
     public final boolean boot() throws LuaException {
-        var tardis = getTardisWithException();
-        return mainThread.runWork(() -> tardis.suggestStateTransition(new BootingUpState()));
+        return mainThread(() -> {
+            var tardis = getTardisWithException();
+            return tardis.suggestStateTransition(new BootingUpState());
+        });
     }
 
     @LuaFunction
     public final boolean shutdown() throws LuaException {
-        var tardis = getTardisWithException();
-        return mainThread.runWork(() -> tardis.suggestStateTransition(new DisabledState()));
+        return mainThread(() -> {
+            var tardis = getTardisWithException();
+            return tardis.suggestStateTransition(new DisabledState());
+        });
     }
 
 
     // Controls
     @LuaFunction
     public final boolean isDestinationLocked() throws LuaException {
-        return getTardisWithException().getControls().isDestinationLocked();
+        return mainThread(() -> getTardisWithException().getControls().isDestinationLocked());
     }
 
     @LuaFunction
     public final boolean setDestinationLocked(IArguments arguments) throws LuaException {
-        var tardis = getTardisWithException();
         var bool = arguments.getBoolean(0);
-        return mainThread.runWork(() -> tardis.getControls().setDestinationLocked(bool, false));
+        return mainThread(() -> {
+            var tardis = getTardisWithException();
+            return tardis.getControls().setDestinationLocked(bool, false);
+        });
     }
 
     @LuaFunction
     public final boolean areConduitsUnlocked() throws LuaException {
-        return getTardisWithException().getControls().areEnergyConduitsUnlocked();
+        return mainThread(() -> getTardisWithException().getControls().areEnergyConduitsUnlocked());
     }
 
     @LuaFunction
     public final boolean setConduitsUnlocked(IArguments arguments) throws LuaException {
-        var tardis = getTardisWithException();
         var bool = arguments.getBoolean(0);
-        return mainThread.runWork(() -> tardis.getControls().setEnergyConduits(bool));
+        return mainThread(() -> {
+            var tardis = getTardisWithException();
+            return tardis.getControls().setEnergyConduits(bool);
+        });
     }
 
     @LuaFunction
     public final boolean handbrake(IArguments arguments) throws LuaException {
-        var tardis = getTardisWithException();
         var bool = arguments.getBoolean(0);
-        return mainThread.runWork(() -> tardis.getControls().handbrake(bool));
+        return mainThread(() -> {
+            var tardis = getTardisWithException();
+            return tardis.getControls().handbrake(bool);
+        });
     }
 
     @LuaFunction
     public final int getCoordinateScale() throws LuaException {
-        return getTardisWithException().getControls().getScaleState();
+        return mainThread(() -> getTardisWithException().getControls().getScaleState());
     }
 
     @LuaFunction
     public final boolean setCoordinateScale(IArguments arguments) throws LuaException {
-        var tardis = getTardisWithException();
         int power = arguments.getInt(0);
+        return mainThread(() -> {
+            var tardis = getTardisWithException();
 
-        if (power < 0 || power > 3)
-            throw new LuaException("Invalid coordinate scale, range of 0 to 3 is allowed");
+            if (power < 0 || power > 3)
+                throw new LuaException("Invalid coordinate scale, range of 0 to 3 is allowed");
 
-        return mainThread.runWork(() -> tardis.getControls().updateCoordinateScale((int) Math.pow(10, power)));
+            return tardis.getControls().updateCoordinateScale((int) Math.pow(10, power));
+        });
     }
 
     @LuaFunction
     public final boolean refuel(IArguments arguments) throws LuaException {
-        var tardis = getTardisWithException();
         var bool = arguments.getBoolean(0);
-        return mainThread.runWork(() -> tardis.getControls().refuelToggle(bool));
+        return mainThread(() -> {
+            var tardis = getTardisWithException();
+            return tardis.getControls().refuelToggle(bool);
+        });
     }
 
     @LuaFunction
     public final boolean nudgeDestination(IArguments arguments) throws LuaException {
-        var tardis = getTardisWithException();
         Direction direction = Direction.byName(arguments.getString(0));
+        return mainThread(() -> {
+            var tardis = getTardisWithException();
 
-        if (direction == null)
-            throw new LuaException("Invalid direction");
+            if (direction == null)
+                throw new LuaException("Invalid direction");
 
-        return mainThread.runWork(() -> tardis.getControls().nudgeDestination(direction));
+            return tardis.getControls().nudgeDestination(direction);
+        });
     }
 
 
     // Position
     @LuaFunction
     public final Integer[] getCurrentPos() throws LuaException {
-        TardisLocation tardisLocation = getTardisWithException().getCurrentLocation().left()
-                .orElseThrow(() -> new LuaException("Current position of TARDIS is unknown"));
-
-        return new Integer[] {tardisLocation.pos().getX(), tardisLocation.pos().getY(), tardisLocation.pos().getZ()};
+        return mainThread(() -> {
+            TardisLocation tardisLocation = getTardisWithException().getCurrentLocation().left()
+                    .orElseThrow(() -> new LuaException("Current position of TARDIS is unknown"));
+            return new Integer[] {tardisLocation.pos().getX(), tardisLocation.pos().getY(), tardisLocation.pos().getZ()};
+        });
     }
 
     @LuaFunction
     public final String getCurrentFacing() throws LuaException {
-        TardisLocation tardisLocation = getTardisWithException().getCurrentLocation().left()
-                .orElseThrow(() -> new LuaException("Current position of TARDIS is unknown"));
+        return mainThread(() -> {
+            TardisLocation tardisLocation = getTardisWithException().getCurrentLocation().left()
+                    .orElseThrow(() -> new LuaException("Current position of TARDIS is unknown"));
 
-        return tardisLocation.facing().asString();
+            return tardisLocation.facing().asString();
+        });
     }
 
     @LuaFunction
     public final String getCurrentWorld() throws LuaException {
-        RegistryKey<World> world = getTardisWithException().getCurrentLocation()
-                .map(
-                        TardisLocation::worldKey,
-                        PartialTardisLocation::worldKey
-                );
+        return mainThread(() -> {
+            RegistryKey<World> world = getTardisWithException().getCurrentLocation()
+                    .map(
+                            TardisLocation::worldKey,
+                            PartialTardisLocation::worldKey
+                    );
 
-        return Utils.worldRegistryToString(world);
+            return Utils.worldRegistryToString(world);
+        });
     }
 
     // Destination
     @LuaFunction
     public final Integer[] getDestinationPos() throws LuaException {
-        TardisLocation tardisLocation = getTardisWithException().getDestination()
-                .orElseThrow(() -> new LuaException("Destination of TARDIS is unknown"));
+        return mainThread(() -> {
+            TardisLocation tardisLocation = getTardisWithException().getDestination()
+                    .orElseThrow(() -> new LuaException("Destination of TARDIS is unknown"));
 
-        return new Integer[] {tardisLocation.pos().getX(), tardisLocation.pos().getY(), tardisLocation.pos().getZ()};
+            return new Integer[]{tardisLocation.pos().getX(), tardisLocation.pos().getY(), tardisLocation.pos().getZ()};
+        });
     }
 
     @LuaFunction
     public final String getDestinationFacing() throws LuaException {
-        TardisLocation tardisLocation = getTardisWithException().getDestination()
-                .orElseThrow(() -> new LuaException("Destination of TARDIS is unknown"));
+        return mainThread(() -> {
+            TardisLocation tardisLocation = getTardisWithException().getDestination()
+                    .orElseThrow(() -> new LuaException("Destination of TARDIS is unknown"));
 
-        return tardisLocation.facing().asString();
+            return tardisLocation.facing().asString();
+        });
     }
 
     @LuaFunction
     public final String getDestinationWorld() throws LuaException {
-        TardisLocation tardisLocation = getTardisWithException().getDestination()
-                .orElseThrow(() -> new LuaException("Destination of TARDIS is unknown"));
+        return mainThread(() -> {
+            TardisLocation tardisLocation = getTardisWithException().getDestination()
+                    .orElseThrow(() -> new LuaException("Destination of TARDIS is unknown"));
 
-        return Utils.worldRegistryToString(tardisLocation.worldKey());
+            return Utils.worldRegistryToString(tardisLocation.worldKey());
+        });
     }
 
     private List<RegistryKey<World>> availableWorldRegistryKeys(Tardis tardis) {
@@ -210,134 +262,151 @@ public class Peripheral implements IPeripheral, TardisAware {
 
     @LuaFunction
     public final String[] getAvailableWorlds() throws LuaException {
-        Tardis tardis = getTardisWithException();
+        return mainThread(() -> {
+            Tardis tardis = getTardisWithException();
 
-        return availableWorldRegistryKeys(tardis).stream()
-                .map(Utils::worldRegistryToString)
-                .toArray(String[]::new);
+            return availableWorldRegistryKeys(tardis).stream()
+                    .map(Utils::worldRegistryToString)
+                    .toArray(String[]::new);
+        });
     }
 
     @LuaFunction
     public final boolean setDestinationWorld(IArguments arguments) throws LuaException {
-        Tardis tardis = getTardisWithException();
-
         Optional<RegistryKey<World>> possibleTarget = Utils.stringToWorldRegistry(arguments.getString(0));
-        if (possibleTarget.isEmpty())
-            throw new LuaException("Invalid destination world");
+        return mainThread(() -> {
+            Tardis tardis = getTardisWithException();
 
-        RegistryKey<World> target = possibleTarget.get();
-        List<RegistryKey<World>> availableWorlds = availableWorldRegistryKeys(tardis);
+            if (possibleTarget.isEmpty())
+                throw new LuaException("Invalid destination world");
 
-        if(!availableWorlds.contains(target))
-            throw new LuaException("Destination world is not available");
+            RegistryKey<World> target = possibleTarget.get();
+            List<RegistryKey<World>> availableWorlds = availableWorldRegistryKeys(tardis);
 
-        return tardis.getControls().moveDestinationToDimension(target);
+            if (!availableWorlds.contains(target))
+                throw new LuaException("Destination world is not available");
+
+            return tardis.getControls().moveDestinationToDimension(target);
+        });
     }
 
     @LuaFunction
     public final boolean setDestinationFacing(IArguments arguments) throws LuaException {
-        var tardis = getTardisWithException();
         Direction direction = Direction.byName(arguments.getString(0));
+        return mainThread(() -> {
+            var tardis = getTardisWithException();
 
-        if(direction == null || direction == Direction.DOWN || direction == Direction.UP)
-            throw new LuaException("Invalid destination facing");
+            if (direction == null || direction == Direction.DOWN || direction == Direction.UP)
+                throw new LuaException("Invalid destination facing");
 
-        return mainThread.runWork(() -> tardis.getControls().rotateDestination(direction));
+            return tardis.getControls().rotateDestination(direction);
+        });
     }
 
     @LuaFunction
     public final boolean setDestinationPos(IArguments arguments) throws LuaException {
-        Tardis tardis = getTardisWithException();
-
         BlockPos targetPos = new BlockPos(arguments.getInt(0), arguments.getInt(1), arguments.getInt(2));
+        return mainThread(() -> {
+            Tardis tardis = getTardisWithException();
 
-        TardisLocation targetLocation = tardis.getDestination()
-                .map(tardisLocation -> tardisLocation.with(targetPos))
-                .orElseGet(() -> tardis.getCurrentLocation().map(
-                        tardisLocation -> tardisLocation.with(targetPos),
-                        partialTardisLocation -> new TardisLocation(
-                                partialTardisLocation.worldKey(),
-                                targetPos,
-                                Direction.NORTH
-                        )
-                ));
+            TardisLocation targetLocation = tardis.getDestination()
+                    .map(tardisLocation -> tardisLocation.with(targetPos))
+                    .orElseGet(() -> tardis.getCurrentLocation().map(
+                            tardisLocation -> tardisLocation.with(targetPos),
+                            partialTardisLocation -> new TardisLocation(
+                                    partialTardisLocation.worldKey(),
+                                    targetPos,
+                                    Direction.NORTH
+                            )
+                    ));
 
-        World targetWorld = targetLocation.getWorld(tardis.getServer());
-        if (!targetWorld.isInBuildLimit(targetLocation.pos()))
-            throw new LuaException("Target location is not in build limit");
-
-        while (!tardis.canSnapDestinationTo(targetLocation)) {
-            targetLocation = targetLocation.with(
-                    targetLocation.pos().offset(Direction.DOWN)
-            );
-
+            World targetWorld = targetLocation.getWorld(tardis.getServer());
             if (!targetWorld.isInBuildLimit(targetLocation.pos()))
-                throw new LuaException("Can't find a landing spot at provided target location");
-        }
+                throw new LuaException("Target location is not in build limit");
 
-        TardisLocation finalTargetLocation = targetLocation;
-        return mainThread.runWork(() -> tardis.setDestination(finalTargetLocation, false));
+            while (!tardis.canSnapDestinationTo(targetLocation)) {
+                targetLocation = targetLocation.with(
+                        targetLocation.pos().offset(Direction.DOWN)
+                );
+
+                if (!targetWorld.isInBuildLimit(targetLocation.pos()))
+                    throw new LuaException("Can't find a landing spot at provided target location");
+            }
+
+            TardisLocation finalTargetLocation = targetLocation;
+            return tardis.setDestination(finalTargetLocation, false);
+        });
     }
 
     @LuaFunction
     public final boolean resetDestination() throws LuaException {
-        var tardis = getTardisWithException();
-        return mainThread.runWork(() -> tardis.getControls().resetDestination());
+        return mainThread(() -> {
+            var tardis = getTardisWithException();
+            return tardis.getControls().resetDestination();
+        });
     }
 
     // Flight info
     @LuaFunction
     public List<List<Integer>> getErrorOffsets() throws LuaException {
-        Tardis tardis = getTardisWithException();
+        return mainThread(() -> {
+            Tardis tardis = getTardisWithException();
 
-        Optional<FlyingState> flyingState = tardis.getState(FlyingState.class);
-        if (flyingState.isEmpty())
-            throw new LuaException("TARDIS is not in flying state");
-        FlyingState state = flyingState.get();
+            Optional<FlyingState> flyingState = tardis.getState(FlyingState.class);
+            if (flyingState.isEmpty())
+                throw new LuaException("TARDIS is not in flying state");
+            FlyingState state = flyingState.get();
 
-        List<List<Integer>> offsets = new ArrayList<>();
+            List<List<Integer>> offsets = new ArrayList<>();
 
-        for (int i = 0; i < state.offsets.length; i += 2) {
-            offsets.add(List.of(state.offsets[i], state.offsets[i + 1]));
-        }
+            for (int i = 0; i < state.offsets.length; i += 2) {
+                offsets.add(List.of(state.offsets[i], state.offsets[i + 1]));
+            }
 
-        return offsets;
+            return offsets;
+        });
     }
 
     @LuaFunction
     public int getTotalDriftingPhases() throws LuaException {
-        Tardis tardis = getTardisWithException();
+        return mainThread(() -> {
+            Tardis tardis = getTardisWithException();
 
-        Optional<DriftingState> driftingState = tardis.getState(DriftingState.class);
-        if (driftingState.isEmpty())
-            throw new LuaException("TARDIS is not in flying state");
-        DriftingState state = driftingState.get();
+            Optional<DriftingState> driftingState = tardis.getState(DriftingState.class);
+            if (driftingState.isEmpty())
+                throw new LuaException("TARDIS is not in flying state");
+            DriftingState state = driftingState.get();
 
-        return state.phaseCount;
+            return state.phaseCount;
+        });
     }
 
     @LuaFunction
     public int getDriftingPhasesComplete() throws LuaException {
-        Tardis tardis = getTardisWithException();
+        return mainThread(() -> {
+            Tardis tardis = getTardisWithException();
 
-        Optional<DriftingState> driftingState = tardis.getState(DriftingState.class);
-        if (driftingState.isEmpty())
-            throw new LuaException("TARDIS is not in flying state");
-        DriftingState state = driftingState.get();
+            Optional<DriftingState> driftingState = tardis.getState(DriftingState.class);
+            if (driftingState.isEmpty())
+                throw new LuaException("TARDIS is not in flying state");
+            DriftingState state = driftingState.get();
 
-        return state.phasesComplete;
+            return state.phasesComplete;
+        });
     }
 
     @LuaFunction
     public boolean isDriftingPhaseReady() throws LuaException {
-        Tardis tardis = getTardisWithException();
+        return mainThread(() -> {
+            Tardis tardis = getTardisWithException();
 
-        Optional<DriftingState> driftingState = tardis.getState(DriftingState.class);
-        if (driftingState.isEmpty())
-            throw new LuaException("TARDIS is not in flying state");
-        DriftingState state = driftingState.get();
+            Optional<DriftingState> driftingState = tardis.getState(DriftingState.class);
+            if (driftingState.isEmpty())
+                throw new LuaException("TARDIS is not in flying state");
+            DriftingState state = driftingState.get();
 
-        return state.phaseTicks >= state.phaseLength;
+            return state.phaseTicks >= state.phaseLength;
+        });
     }
 
 
